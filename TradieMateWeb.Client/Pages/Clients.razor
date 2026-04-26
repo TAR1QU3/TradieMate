@@ -1,0 +1,82 @@
+@page "/clients"
+@inject HttpClient Http
+
+<div class="page-header">
+    <h2>👥 Clients</h2>
+    <button class="btn-primary" @onclick="() => showForm = !showForm">+ New Client</button>
+</div>
+
+@if (showForm)
+{
+    <div class="form-card">
+        <h3>New Client</h3>
+
+        <label>Full Name *</label>
+        <input @bind="newClient.Name" placeholder="e.g. John Smith"/>
+
+        <label>Phone</label>
+        <input @bind="newClient.Phone" placeholder="e.g. 0412 345 678"/>
+
+        <label>Email</label>
+        <input @bind="newClient.Email" placeholder="e.g. john@email.com"/>
+
+        <label>Address</label>
+        <textarea @bind="newClient.Address" placeholder="e.g. 12 Main St, Perth WA 6000"></textarea>
+
+        <button class="btn-primary" @onclick="AddClient">+ Add Client</button>
+        <button class="btn-secondary" @onclick="() => showForm = false">Cancel</button>
+    </div>
+}
+
+@foreach (var client in clients)
+{
+    <div class="client-card">
+        <div>
+            <h3>@client.Name</h3>
+            <p>📞 @client.Phone</p>
+            <p>✉️ @client.Email</p>
+            <p>📍 @client.Address</p>
+        </div>
+        <button class="btn-red" @onclick="() => DeleteClient(client.Id)">🗑 Delete</button>
+    </div>
+}
+
+@if (!clients.Any())
+{
+    <div class="empty">No clients yet. Add your first client!</div>
+}
+
+@code {
+    private List<TradieMateWeb.Client.Models.Client> clients = new();
+    private TradieMateWeb.Client.Models.Client newClient = new();
+    private bool showForm = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadClients();
+    }
+
+    private async Task LoadClients()
+    {
+        try
+        {
+            clients = await Http.GetFromJsonAsync<List<TradieMateWeb.Client.Models.Client>>("Clients") ?? new();
+        }
+        catch { }
+    }
+
+    private async Task AddClient()
+    {
+        if (string.IsNullOrWhiteSpace(newClient.Name)) return;
+        await Http.PostAsJsonAsync("Clients", newClient);
+        newClient = new();
+        showForm = false;
+        await LoadClients();
+    }
+
+    private async Task DeleteClient(int id)
+    {
+        await Http.DeleteAsync($"Clients/{id}");
+        await LoadClients();
+    }
+}

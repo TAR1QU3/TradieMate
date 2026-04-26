@@ -1,0 +1,90 @@
+@page "/settings"
+@inject HttpClient Http
+
+<div class="page-header">
+    <h2>⚙️ Business Settings</h2>
+</div>
+
+<div class="form-card">
+    <h3>Business Information</h3>
+
+    <label>Business Name</label>
+    <input @bind="settings.BusinessName" placeholder="e.g. Smith Plumbing"/>
+
+    <label>Owner Name</label>
+    <input @bind="settings.OwnerName" placeholder="e.g. John Smith"/>
+
+    <label>ABN</label>
+    <input @bind="settings.ABN" placeholder="e.g. 12 345 678 901"/>
+
+    <label>Phone</label>
+    <input @bind="settings.Phone" placeholder="e.g. 0412 345 678"/>
+
+    <label>Email</label>
+    <input @bind="settings.Email" placeholder="e.g. john@smithplumbing.com.au"/>
+
+    <label>Address</label>
+    <input @bind="settings.Address" placeholder="e.g. 12 Main St, Perth WA 6000"/>
+</div>
+
+<div class="form-card">
+    <h3>Payment Details</h3>
+
+    <label>Bank Name</label>
+    <input @bind="settings.BankName" placeholder="e.g. Commonwealth Bank"/>
+
+    <div class="row">
+        <div>
+            <label>BSB</label>
+            <input @bind="settings.BSB" placeholder="e.g. 062-000"/>
+        </div>
+        <div>
+            <label>Account Number</label>
+            <input @bind="settings.AccountNumber" placeholder="e.g. 12345678"/>
+        </div>
+    </div>
+
+    <label>PayID</label>
+    <input @bind="settings.PayID" placeholder="e.g. 0412345678 or email"/>
+
+    <label>Payment Terms</label>
+    <input @bind="settings.PaymentTerms" placeholder="e.g. Net 14"/>
+</div>
+
+<div class="form-card">
+    <h3>Invoice Notes</h3>
+    <textarea @bind="settings.InvoiceNotes" 
+              placeholder="e.g. Thank you for your business! Please pay within 14 days.">
+    </textarea>
+</div>
+
+<button class="btn-primary" @onclick="SaveSettings">💾 Save Settings</button>
+
+@if (!string.IsNullOrEmpty(saveMessage))
+{
+    <p class="success-msg">@saveMessage</p>
+}
+
+@code {
+    private TradieMateWeb.Client.Models.BusinessSettings settings = new();
+    private string saveMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            settings = await Http.GetFromJsonAsync<TradieMateWeb.Client.Models.BusinessSettings>("Settings") 
+                       ?? new();
+        }
+        catch { }
+    }
+
+    private async Task SaveSettings()
+    {
+        await Http.PostAsJsonAsync("Settings", settings);
+        saveMessage = "✅ Settings saved!";
+        await Task.Delay(3000);
+        saveMessage = string.Empty;
+        StateHasChanged();
+    }
+}

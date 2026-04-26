@@ -1,0 +1,62 @@
+﻿@page "/"
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<div class="dashboard">
+    <div class="header">
+        <h1>🔨 TradieMate</h1>
+        <p>Job & Invoice Manager</p>
+    </div>
+
+    <div class="cards">
+        <div class="card green">
+            <p>Total Earned</p>
+            <h2>$@TotalEarned.ToString("N0")</h2>
+        </div>
+        <div class="card red">
+            <p>Unpaid</p>
+            <h2>$@TotalUnpaid.ToString("N0")</h2>
+        </div>
+        <div class="card blue">
+            <p>Total Jobs</p>
+            <h2>@TotalJobs</h2>
+        </div>
+        <div class="card orange">
+            <p>Clients</p>
+            <h2>@TotalClients</h2>
+        </div>
+    </div>
+
+    <div class="quick-links">
+        <button class="btn-primary" @onclick='() => Nav.NavigateTo("/jobs")'>📋 View Jobs</button>
+        <button class="btn-primary" @onclick='() => Nav.NavigateTo("/clients")'>👥 View Clients</button>
+        <button class="btn-primary" @onclick='() => Nav.NavigateTo("/settings")'>⚙️ Settings</button>
+    </div>
+</div>
+
+@code {
+    private double TotalEarned;
+    private double TotalUnpaid;
+    private int TotalJobs;
+    private int TotalClients;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var jobs = await Http.GetFromJsonAsync<List<TradieMateWeb.Client.Models.Job>>("Jobs");
+            var clients = await Http.GetFromJsonAsync<List<TradieMateWeb.Client.Models.Client>>("Clients");
+
+            if (jobs != null)
+            {
+                TotalEarned = jobs.Where(j => j.IsPaid).Sum(j => j.TotalAmount);
+                TotalUnpaid = jobs.Where(j => !j.IsPaid).Sum(j => j.TotalAmount);
+                TotalJobs = jobs.Count;
+            }
+
+            if (clients != null)
+                TotalClients = clients.Count;
+        }
+        catch { }
+    }
+}

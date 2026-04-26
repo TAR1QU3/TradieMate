@@ -1,0 +1,146 @@
+@page "/jobs"
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<div class="page-header">
+    <h2>📋 Jobs</h2>
+    <button class="btn-primary" @onclick="() => showForm = !showForm">+ New Job</button>
+</div>
+
+@if (showForm)
+{
+    <div class="form-card">
+        <h3>New Job</h3>
+
+        <label>Client</label>
+        <select @bind="newJob.ClientId">
+            <option value="0">-- Select Client --</option>
+            @foreach (var c in clients)
+            {
+                <option value="@c.Id">@c.Name</option>
+            }
+        </select>
+
+        <label>Job Title</label>
+        <input @bind="newJob.Title" placeholder="e.g. Fix leaking pipe"/>
+
+        <label>Description</label>
+        <textarea @bind="newJob.Description" placeholder="Job details..."></textarea>
+
+        <div class="row">
+            <div>
+                <label>Labour Cost ($)</label>
+                <input type="number" @bind="newJob.LaborCost"/>
+            </div>
+            <div>
+                <label>Material Cost ($)</label>
+                <input type="number" @bind="newJob.MaterialCost"/>
+            </div>
+        </div>
+
+        <label>Status</label>
+        <select @bind="newJob.Status">
+            <option>Pending</option>
+            <option>In Progress</option>
+            <option>Completed</option>
+        </select>
+
+        <label>Due Date</label>
+        <input type="date" @bind="newJob.DueDate"/>
+
+        <label>Payment Terms</label>
+        <input @bind="newJob.PaymentTerms" placeholder="e.g. Net 14"/>
+
+        <button class="btn-primary" @onclick="AddJob">+ Add Job</button>
+        <button class="btn-secondary" @onclick="() => showForm = false">Cancel</button>
+    </div>
+}
+
+<!-- Summary -->
+<div class="cards">
+    <div class="card green">
+        <p>Total Earned</p>
+        <h2>$@jobs.Where(j => j.IsPaid).Sum(j => j.TotalAmount).ToString("N0")</h2>
+    </div>
+    <div class="card red">
+        <p>Unpaid</p>
+        <h2>$@jobs.Where(j => !j.IsPaid).Sum(j => j.TotalAmount).ToString("N0")</h2>
+    </div>
+</div>
+
+<!-- Jobs List -->
+@foreach (var job in jobs)
+{
+    <div class="job-card">
+        <div class="job-info">
+            <h3>@job.Title</h3>
+            <p class="client-name">👤 @(job.Client?.Name ?? "Unknown")</p>
+            <p>@job.Description</p>
+            <span class="badge @job.Status.Replace(" ", "")">@job.Status</span>
+            <span class="badge @(job.IsPaid ? "Paid" : "Unpaid")">
+                @(job.IsPaid ? "✅ Paid" : "⏳ Unpaid")
+            </span>
+        </div>
+        <div class="job-amount">
+            <h3>$@job.TotalAmount.ToString("N0")</h3>
+            <p>Labour: $@job.LaborCost.ToString("N0")</p>
+            <p>Materials: $@job.MaterialCost.ToString("N0")</p>
+            <p>Due: @job.DueDate.ToString("dd MMM yyyy")</p>
+            <div class="job-actions">
+                @if (!job.IsPaid)
+                {
+                    <button class="btn-green" @onclick="() => MarkAsPaid(job.Id)">✅ Mark Paid</button>
+                }
+                <button class="btn-red" @onclick="() => DeleteJob(job.Id)">🗑 Delete</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (!jobs.Any())
+{
+    <div class="empty">No jobs yet. Add your first job!</div>
+}
+
+@code {
+    private List<TradieMateWeb.Client.Models.Job> jobs = new();
+    private List<TradieMateWeb.Client.Models.Client> clients = new();
+    private TradieMateWeb.Client.Models.Job newJob = new();
+    private bool showForm = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            jobs = await Http.GetFromJsonAsync<List<TradieMateWeb.Client.Models.Job>>("Jobs") ?? new();
+            clients = await Http.GetFromJsonAsync<List<TradieMateWeb.Client.Models.Client>>("Clients") ?? new();
+        }
+        catch { }
+    }
+
+    private async Task AddJob()
+    {
+        if (string.IsNullOrWhiteSpace(newJob.Title) || newJob.ClientId == 0) return;
+        await Http.PostAsJsonAsync("Jobs", newJob);
+        newJob = new();
+        showForm = false;
+        await LoadData();
+    }
+
+    private async Task MarkAsPaid(int id)
+    {
+        await Http.PutAsJsonAsync($"Jobs/{id}/pay", new { });
+        await LoadData();
+    }
+
+    private async Task DeleteJob(int id)
+    {
+        await Http.DeleteAsync($"Jobs/{id}");
+        await LoadData();
+    }
+}
