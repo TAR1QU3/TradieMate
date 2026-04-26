@@ -9,7 +9,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 // API URL
 builder.Services.AddScoped(sp => new HttpClient 
 { 
-    BaseAddress = new Uri("http://localhost:5257/api/") 
+    BaseAddress = new Uri("https://tradiemate.onrender.com/api/")
 });
 
 await builder.Build().RunAsync();
