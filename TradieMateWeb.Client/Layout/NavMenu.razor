@@ -2,36 +2,38 @@
 @inject AuthService Auth
 @inject NavigationManager Nav
 
-<nav class="sidebar">
-    <div class="logo">
-        <h2>🔨 TradieMate</h2>
-        <p>@Auth.BusinessName</p>
-    </div>
+<div class="logo">
+    <h2>🔨 TradieMate</h2>
+    <p>@Auth.BusinessName</p>
+</div>
 
-    <NavLink href="/" Match="NavLinkMatch.All">
-        🏠 Dashboard
-    </NavLink>
-    <NavLink href="/jobs">
-        📋 Jobs
-    </NavLink>
-    <NavLink href="/clients">
-        👥 Clients
-    </NavLink>
-    <NavLink href="/settings">
-        ⚙️ Settings
-    </NavLink>
+<NavLink href="/" Match="NavLinkMatch.All" @onclick="NavClicked">
+    🏠 Dashboard
+</NavLink>
+<NavLink href="/jobs" @onclick="NavClicked">
+    📋 Jobs
+</NavLink>
+<NavLink href="/clients" @onclick="NavClicked">
+    👥 Clients
+</NavLink>
+<NavLink href="/settings" @onclick="NavClicked">
+    ⚙️ Settings
+</NavLink>
 
-    <div style="margin-top:auto; padding: 16px 8px;">
-        <p style="font-size:11px; color:#6c7086; padding: 0 8px; margin-bottom:8px;">
-            @Auth.Email
-        </p>
-        <button class="btn-red" style="width:100%;" @onclick="Logout">
-            🚪 Logout
-        </button>
-    </div>
-</nav>
+<div style="margin-top:auto; padding: 16px 8px;">
+    <p style="font-size:11px; color:#6c7086; padding: 0 8px; margin-bottom:8px;">
+        @Auth.Email
+    </p>
+    <button class="btn-red" style="width:100%;" @onclick="Logout">
+        🚪 Logout
+    </button>
+</div>
 
 @code {
+    [Parameter] public EventCallback OnNavClick { get; set; }
+
+    private async Task NavClicked() => await OnNavClick.InvokeAsync();
+
     private void Logout()
     {
         Auth.Logout();
