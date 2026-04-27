@@ -12,8 +12,8 @@ using TradieMateWeb.API.Data;
 namespace TradieMateWeb.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260427053945_PostgreSQLMigration")]
-    partial class PostgreSQLMigration
+    [Migration("20260427060945_FreshStart")]
+    partial class FreshStart
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
