@@ -14,4 +14,10 @@ builder.Services.AddScoped(sp => new HttpClient
 
 builder.Services.AddScoped<AuthService>();
 
-await builder.Build().RunAsync();
+var host = builder.Build();
+
+// Initialize auth from session
+var auth = host.Services.GetRequiredService<AuthService>();
+await auth.InitializeAsync();
+
+await host.RunAsync();

@@ -34,9 +34,9 @@
 
     private async Task NavClicked() => await OnNavClick.InvokeAsync();
 
-    private void Logout()
+    private async Task Logout()
     {
-        Auth.Logout();
+        await Auth.Logout();
         Nav.NavigateTo("/login");
     }
 }

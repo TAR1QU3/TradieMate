@@ -3,24 +3,32 @@
 @inject AuthService Auth
 @inject NavigationManager Nav
 
-<button class="hamburger" @onclick="ToggleMenu">☰</button>
-
-@if (menuOpen)
+@if (Auth.IsLoggedIn)
 {
-    <div class="overlay open" @onclick="CloseMenu"></div>
+    <button class="hamburger" @onclick="ToggleMenu">☰</button>
+
+    @if (menuOpen)
+    {
+        <div class="overlay open" @onclick="CloseMenu"></div>
+    }
+
+    <div class="sidebar @(menuOpen ? "open" : "")">
+        <NavMenu OnNavClick="CloseMenu"/>
+    </div>
+
+    <div class="main-content">
+        @Body
+    </div>
 }
-
-<div class="sidebar @(menuOpen ? "open" : "")">
-    <NavMenu OnNavClick="CloseMenu"/>
-</div>
-
-<div class="main-content">
-    @Body
-</div>
+else
+{
+    <div style="min-height:100vh; background:#1e1e2e;">
+        @Body
+    </div>
+}
 
 @code {
     private bool menuOpen = false;
-
     private void ToggleMenu() => menuOpen = !menuOpen;
     private void CloseMenu() => menuOpen = false;
 }
