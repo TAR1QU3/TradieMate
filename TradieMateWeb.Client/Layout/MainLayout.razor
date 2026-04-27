@@ -6,13 +6,11 @@
 @if (Auth.IsLoggedIn)
 {
     <div style="display:flex; min-height:100vh;">
-        
-        <!-- DESKTOP SIDEBAR -->
+
         <div class="sidebar-desktop">
             <NavMenu OnNavClick="CloseMenu"/>
         </div>
 
-        <!-- MOBILE HAMBURGER -->
         <button class="hamburger" @onclick="ToggleMenu">☰</button>
 
         @if (menuOpen)
@@ -24,10 +22,10 @@
             <NavMenu OnNavClick="CloseMenu"/>
         </div>
 
-        <!-- MAIN CONTENT -->
         <div class="main-content">
             @Body
         </div>
+
     </div>
 }
 else
