@@ -347,12 +347,13 @@ body {
 
     .overlay.open { display: block; }
 
-    .main-content {
+   .main-content {
         margin-left: 220px;
-        padding: 24px;
+        padding: 24px 24px 24px 24px;
         width: calc(100% - 220px);
         min-height: 100vh;
-        padding-top: 24px;
+        position: relative;
+        top: 0;
     }
 
     .job-card { flex-direction: column; }
