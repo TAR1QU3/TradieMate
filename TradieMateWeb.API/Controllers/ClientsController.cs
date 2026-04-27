@@ -36,7 +36,7 @@ public class ClientsController : ControllerBase
     public async Task<IActionResult> Create(Client client)
     {
         client.UserId = GetUserId();
-        client.CreatedAt = DateTime.Now;
+        client.CreatedAt = DateTime.UtcNow;
         _db.Clients.Add(client);
         await _db.SaveChangesAsync();
         return Ok(client);

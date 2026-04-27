@@ -10,5 +10,5 @@ public class Client
     public string Email { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
     public int UserId { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

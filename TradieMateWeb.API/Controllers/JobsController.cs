@@ -37,7 +37,7 @@ public class JobsController : ControllerBase
     public async Task<IActionResult> Create(Job job)
     {
         job.UserId = GetUserId();
-        job.JobDate = DateTime.Now;
+        job.JobDate = DateTime.UtcNow;
         _db.Jobs.Add(job);
         await _db.SaveChangesAsync();
         return Ok(job);

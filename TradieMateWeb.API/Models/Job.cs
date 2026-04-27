@@ -13,9 +13,8 @@ public class Job
     public double MaterialCost { get; set; }
     public double TotalAmount => LaborCost + MaterialCost;
     public string Status { get; set; } = "Pending";
-    public DateTime JobDate { get; set; } = DateTime.Now;
-    public DateTime DueDate { get; set; } = DateTime.Now.AddDays(14);
-    public bool IsPaid { get; set; } = false;
+    public DateTime JobDate { get; set; } = DateTime.UtcNow;
+    public DateTime DueDate { get; set; } = DateTime.UtcNow.AddDays(14);    public bool IsPaid { get; set; } = false;
     public string PaymentTerms { get; set; } = "Net 14";
     public int UserId { get; set; }
 }
