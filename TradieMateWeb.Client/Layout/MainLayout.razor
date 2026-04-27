@@ -5,19 +5,29 @@
 
 @if (Auth.IsLoggedIn)
 {
-    <button class="hamburger" @onclick="ToggleMenu">☰</button>
+    <div style="display:flex; min-height:100vh;">
+        
+        <!-- DESKTOP SIDEBAR -->
+        <div class="sidebar-desktop">
+            <NavMenu OnNavClick="CloseMenu"/>
+        </div>
 
-    @if (menuOpen)
-    {
-        <div class="overlay open" @onclick="CloseMenu"></div>
-    }
+        <!-- MOBILE HAMBURGER -->
+        <button class="hamburger" @onclick="ToggleMenu">☰</button>
 
-    <div class="sidebar @(menuOpen ? "open" : "")">
-        <NavMenu OnNavClick="CloseMenu"/>
-    </div>
+        @if (menuOpen)
+        {
+            <div class="overlay open" @onclick="CloseMenu"></div>
+        }
 
-    <div class="main-content">
-        @Body
+        <div class="sidebar-mobile @(menuOpen ? "open" : "")">
+            <NavMenu OnNavClick="CloseMenu"/>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            @Body
+        </div>
     </div>
 }
 else
