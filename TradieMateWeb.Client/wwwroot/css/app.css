@@ -348,9 +348,11 @@ body {
     .overlay.open { display: block; }
 
     .main-content {
-        margin-left: 0;
-        width: 100%;
-        padding: 60px 16px 16px;
+        margin-left: 220px;
+        padding: 24px;
+        width: calc(100% - 220px);
+        min-height: 100vh;
+        padding-top: 24px;
     }
 
     .job-card { flex-direction: column; }
