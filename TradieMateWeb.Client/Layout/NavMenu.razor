@@ -1,7 +1,11 @@
-﻿<nav class="sidebar">
+﻿@using TradieMateWeb.Client.Services
+@inject AuthService Auth
+@inject NavigationManager Nav
+
+<nav class="sidebar">
     <div class="logo">
         <h2>🔨 TradieMate</h2>
-        <p>Job Manager</p>
+        <p>@Auth.BusinessName</p>
     </div>
 
     <NavLink href="/" Match="NavLinkMatch.All">
@@ -12,8 +16,25 @@
     </NavLink>
     <NavLink href="/clients">
         👥 Clients
-    </NavLink>x
+    </NavLink>
     <NavLink href="/settings">
         ⚙️ Settings
     </NavLink>
+
+    <div style="margin-top:auto; padding: 16px 8px;">
+        <p style="font-size:11px; color:#6c7086; padding: 0 8px; margin-bottom:8px;">
+            @Auth.Email
+        </p>
+        <button class="btn-red" style="width:100%;" @onclick="Logout">
+            🚪 Logout
+        </button>
+    </div>
 </nav>
+
+@code {
+    private void Logout()
+    {
+        Auth.Logout();
+        Nav.NavigateTo("/login");
+    }
+}

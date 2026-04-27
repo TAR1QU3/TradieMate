@@ -1,12 +1,17 @@
-﻿<Router AppAssembly="@typeof(App).Assembly">
+﻿@using TradieMateWeb.Client.Services
+@inject AuthService Auth
+@inject NavigationManager Nav
+
+<Router AppAssembly="typeof(App).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        @if (Auth.IsLoggedIn || Nav.Uri.Contains("/login"))
+        {
+            <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)"/>
+            <FocusOnNavigate RouteData="routeData" Selector="h1"/>
+        }
+        else
+        {
+            <RedirectToLogin/>
+        }
     </Found>
-    <NotFound>
-        <PageTitle>Not found</PageTitle>
-        <LayoutView Layout="@typeof(MainLayout)">
-            <p role="alert">Sorry, there's nothing at this address.</p>
-        </LayoutView>
-    </NotFound>
 </Router>

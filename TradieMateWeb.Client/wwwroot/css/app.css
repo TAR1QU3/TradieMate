@@ -299,3 +299,80 @@ body {
     color: white;
     font-weight: bold;
 }
+/* AUTH */
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: #1e1e2e;
+}
+
+.auth-card {
+    background: #313244;
+    border-radius: 12px;
+    padding: 40px;
+    width: 100%;
+    max-width: 400px;
+}
+
+.auth-card h2 {
+    font-size: 24px;
+    margin-bottom: 4px;
+}
+
+.auth-subtitle {
+    color: #6c7086;
+    font-size: 13px;
+    margin-bottom: 24px;
+}
+
+.auth-card h3 {
+    font-size: 18px;
+    margin-bottom: 16px;
+    color: #89b4fa;
+}
+
+.auth-card label {
+    display: block;
+    font-size: 12px;
+    color: #cdd6f4;
+    margin-bottom: 4px;
+    margin-top: 12px;
+}
+
+.auth-card input {
+    width: 100%;
+    padding: 10px 12px;
+    background: #45475a;
+    border: 1px solid #585b70;
+    border-radius: 6px;
+    color: white;
+    font-size: 14px;
+}
+
+.auth-card .btn-primary {
+    width: 100%;
+    margin-top: 20px;
+    padding: 12px;
+    font-size: 15px;
+}
+
+.switch-link {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 13px;
+    color: #6c7086;
+}
+
+.switch-link span {
+    color: #89b4fa;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.error-msg {
+    color: #f38ba8;
+    font-size: 13px;
+    margin-top: 8px;
+}

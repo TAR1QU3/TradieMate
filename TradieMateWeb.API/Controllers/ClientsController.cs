@@ -1,10 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using TradieMateWeb.API.Data;
 using TradieMateWeb.API.Models;
 
 namespace TradieMateWeb.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class ClientsController : ControllerBase
@@ -16,16 +19,23 @@ public class ClientsController : ControllerBase
         _db = db;
     }
 
+    private int GetUserId() =>
+        int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var clients = await _db.Clients.OrderBy(c => c.Name).ToListAsync();
+        var clients = await _db.Clients
+            .Where(c => c.UserId == GetUserId())
+            .OrderBy(c => c.Name)
+            .ToListAsync();
         return Ok(clients);
     }
 
     [HttpPost]
     public async Task<IActionResult> Create(Client client)
     {
+        client.UserId = GetUserId();
         client.CreatedAt = DateTime.Now;
         _db.Clients.Add(client);
         await _db.SaveChangesAsync();
@@ -35,7 +45,8 @@ public class ClientsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var client = await _db.Clients.FindAsync(id);
+        var client = await _db.Clients
+            .FirstOrDefaultAsync(c => c.Id == id && c.UserId == GetUserId());
         if (client == null) return NotFound();
         _db.Clients.Remove(client);
         await _db.SaveChangesAsync();

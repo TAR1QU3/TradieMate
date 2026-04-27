@@ -17,4 +17,5 @@ public class Job
     public DateTime DueDate { get; set; } = DateTime.Now.AddDays(14);
     public bool IsPaid { get; set; } = false;
     public string PaymentTerms { get; set; } = "Net 14";
+    public int UserId { get; set; }
 }

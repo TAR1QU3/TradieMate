@@ -1,0 +1,111 @@
+@page "/login"
+@inject AuthService Auth
+@inject NavigationManager Nav
+@using TradieMateWeb.Client.Services
+@using TradieMateWeb.Client.Models
+
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>🔨 TradieMate</h2>
+        <p class="auth-subtitle">Job & Invoice Manager</p>
+
+        @if (!showRegister)
+        {
+            <h3>Login</h3>
+
+            <label>Email</label>
+            <input type="email" @bind="loginDto.Email" placeholder="your@email.com"/>
+
+            <label>Password</label>
+            <input type="password" @bind="loginDto.Password" placeholder="Password"/>
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <p class="error-msg">@errorMessage</p>
+            }
+
+            <button class="btn-primary" @onclick="DoLogin">Login</button>
+            <p class="switch-link">
+                No account? 
+                <span @onclick="() => showRegister = true">Register here</span>
+            </p>
+        }
+        else
+        {
+            <h3>Register</h3>
+
+            <label>Business Name</label>
+            <input @bind="registerDto.BusinessName" placeholder="e.g. Smith Plumbing"/>
+
+            <label>Email</label>
+            <input type="email" @bind="registerDto.Email" placeholder="your@email.com"/>
+
+            <label>Password</label>
+            <input type="password" @bind="registerDto.Password" placeholder="Password"/>
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <p class="error-msg">@errorMessage</p>
+            }
+
+            @if (!string.IsNullOrEmpty(successMessage))
+            {
+                <p class="success-msg">@successMessage</p>
+            }
+
+            <button class="btn-primary" @onclick="DoRegister">Register</button>
+            <p class="switch-link">
+                Already have account? 
+                <span @onclick="() => showRegister = false">Login here</span>
+            </p>
+        }
+    </div>
+</div>
+
+@code {
+    private LoginDto loginDto = new();
+    private RegisterDto registerDto = new();
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
+    private bool showRegister = false;
+
+    protected override void OnInitialized()
+    {
+        if (Auth.IsLoggedIn)
+            Nav.NavigateTo("/");
+    }
+
+    private async Task DoLogin()
+    {
+        errorMessage = string.Empty;
+        var success = await Auth.Login(loginDto);
+        if (success)
+            Nav.NavigateTo("/");
+        else
+            errorMessage = "Invalid email or password!";
+    }
+
+    private async Task DoRegister()
+    {
+        errorMessage = string.Empty;
+        successMessage = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(registerDto.BusinessName) ||
+            string.IsNullOrWhiteSpace(registerDto.Email) ||
+            string.IsNullOrWhiteSpace(registerDto.Password))
+        {
+            errorMessage = "All fields are required!";
+            return;
+        }
+
+        var success = await Auth.Register(registerDto);
+        if (success)
+        {
+            successMessage = "Registered! Please login now.";
+            showRegister = false;
+            loginDto.Email = registerDto.Email;
+        }
+        else
+            errorMessage = "Registration failed. Email may already exist.";
+    }
+}
