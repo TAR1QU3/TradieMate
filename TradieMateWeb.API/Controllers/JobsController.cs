@@ -64,4 +64,164 @@ public class JobsController : ControllerBase
         await _db.SaveChangesAsync();
         return Ok();
     }
+    [HttpGet("{id}/invoice")]
+    public async Task<IActionResult> GenerateInvoice(int id)
+    {
+        var job = await _db.Jobs
+            .Include(j => j.Client)
+            .FirstOrDefaultAsync(j => j.Id == id && j.UserId == GetUserId());
+
+        if (job == null) return NotFound();
+
+        var settings = await _db.BusinessSettings
+            .FirstOrDefaultAsync(s => s.Id == GetUserId());
+
+        settings ??= new BusinessSettings();
+
+        QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
+        var gst = job.TotalAmount * 0.10;
+        var total = job.TotalAmount + gst;
+
+        var pdf = QuestPDF.Fluent.Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(QuestPDF.Helpers.PageSizes.A4);
+                page.Margin(40);
+                page.PageColor(QuestPDF.Helpers.Colors.White);
+
+                page.Content().Column(col =>
+                {
+                    // Header
+                    col.Item().Row(row =>
+                    {
+                        row.RelativeItem().Column(c =>
+                        {
+                            c.Item().Text(string.IsNullOrEmpty(settings.BusinessName)
+                                ? "TradieMate" : settings.BusinessName)
+                                .FontSize(26).Bold().FontColor("#1E1E2E");
+
+                            if (!string.IsNullOrEmpty(settings.ABN))
+                                c.Item().Text($"ABN: {settings.ABN}")
+                                    .FontSize(11).FontColor("#6C7086");
+
+                            if (!string.IsNullOrEmpty(settings.Phone))
+                                c.Item().Text($"Phone: {settings.Phone}")
+                                    .FontSize(11).FontColor("#6C7086");
+
+                            if (!string.IsNullOrEmpty(settings.Email))
+                                c.Item().Text($"Email: {settings.Email}")
+                                    .FontSize(11).FontColor("#6C7086");
+                        });
+
+                        row.ConstantItem(160).Column(c =>
+                        {
+                            c.Item().Text("TAX INVOICE")
+                                .FontSize(20).Bold().FontColor("#89B4FA").AlignRight();
+                            c.Item().Text($"#{job.Id:D4}")
+                                .FontSize(14).FontColor("#6C7086").AlignRight();
+                            c.Item().Text($"Date: {DateTime.UtcNow:dd MMM yyyy}")
+                                .FontSize(10).FontColor("#6C7086").AlignRight();
+                            c.Item().Text($"Due: {job.DueDate:dd MMM yyyy}")
+                                .FontSize(10).FontColor("#F38BA8").AlignRight();
+                        });
+                    });
+
+                    col.Item().PaddingVertical(12).LineHorizontal(1).LineColor("#E0E0E0");
+
+                    // Bill To
+                    col.Item().PaddingBottom(12).Row(row =>
+                    {
+                        row.RelativeItem().Column(c =>
+                        {
+                            c.Item().Text("BILL TO").FontSize(10).Bold().FontColor("#6C7086");
+                            c.Item().Text(job.Client?.Name ?? job.ClientId.ToString())
+                                .FontSize(14).Bold();
+                        });
+
+                        row.ConstantItem(200).Column(c =>
+                        {
+                            c.Item().Text("JOB DETAILS").FontSize(10).Bold().FontColor("#6C7086");
+                            c.Item().Text(job.Title).FontSize(12).Bold();
+                            if (!string.IsNullOrEmpty(job.Description))
+                                c.Item().Text(job.Description).FontSize(10).FontColor("#6C7086");
+                            c.Item().Text($"Status: {job.Status}").FontSize(10).FontColor("#6C7086");
+                        });
+                    });
+
+                    col.Item().PaddingVertical(4).LineHorizontal(1).LineColor("#E0E0E0");
+
+                    // Table
+                    col.Item().PaddingVertical(12).Table(table =>
+                    {
+                        table.ColumnsDefinition(cols =>
+                        {
+                            cols.RelativeColumn(3);
+                            cols.RelativeColumn(1);
+                        });
+
+                        table.Header(header =>
+                        {
+                            header.Cell().Background("#1E1E2E").Padding(8)
+                                .Text("Description").FontColor(QuestPDF.Helpers.Colors.White).Bold();
+                            header.Cell().Background("#1E1E2E").Padding(8)
+                                .Text("Amount (AUD)").FontColor(QuestPDF.Helpers.Colors.White).Bold().AlignRight();
+                        });
+
+                        table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8).Text("Labour Cost");
+                        table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8).Text($"${job.LaborCost:N2}").AlignRight();
+
+                        table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8).Text("Material Cost");
+                        table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8).Text($"${job.MaterialCost:N2}").AlignRight();
+
+                        table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8).Text("GST (10%)").FontColor("#6C7086");
+                        table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8).Text($"${gst:N2}").AlignRight().FontColor("#6C7086");
+
+                        table.Cell().Background("#F0F4FF").Padding(10).Text("TOTAL DUE (AUD)").Bold().FontSize(14);
+                        table.Cell().Background("#F0F4FF").Padding(10).Text($"${total:N2}").Bold().FontSize(14).AlignRight().FontColor("#89B4FA");
+                    });
+
+                    col.Item().PaddingVertical(12).LineHorizontal(1).LineColor("#E0E0E0");
+
+                    // Payment Details
+                    if (!string.IsNullOrEmpty(settings.PayID) || !string.IsNullOrEmpty(settings.BankName))
+                    {
+                        col.Item().PaddingVertical(8).Background("#F8F9FF").Padding(12).Column(c =>
+                        {
+                            c.Item().Text("PAYMENT DETAILS").FontSize(11).Bold().FontColor("#1E1E2E");
+
+                            if (!string.IsNullOrEmpty(settings.PayID))
+                                c.Item().Text($"PayID: {settings.PayID}").FontSize(11);
+
+                            if (!string.IsNullOrEmpty(settings.BankName))
+                                c.Item().Text($"Bank: {settings.BankName}").FontSize(11);
+
+                            if (!string.IsNullOrEmpty(settings.BSB))
+                                c.Item().Text($"BSB: {settings.BSB}  Account: {settings.AccountNumber}").FontSize(11);
+
+                            c.Item().PaddingTop(4).Text($"Reference: Invoice #{job.Id:D4}")
+                                .FontSize(10).FontColor("#6C7086").Italic();
+                        });
+                    }
+
+                    col.Item().PaddingTop(8).Text(job.IsPaid ? "PAID" : "PAYMENT DUE")
+                        .FontSize(14).Bold()
+                        .FontColor(job.IsPaid ? "#A6E3A1" : "#F38BA8");
+
+                    col.Item().PaddingTop(16).LineHorizontal(1).LineColor("#E0E0E0");
+                    col.Item().PaddingTop(8).Text(
+                        string.IsNullOrEmpty(settings.InvoiceNotes)
+                        ? "Thank you for your business!"
+                        : settings.InvoiceNotes)
+                        .FontSize(10).FontColor("#6C7086").AlignCenter();
+
+                    col.Item().PaddingTop(4).Text("Generated by TradieMate")
+                        .FontSize(9).FontColor("#AAAAAA").AlignCenter();
+                });
+            });
+        }).GeneratePdf();
+
+        return File(pdf, "application/pdf", $"Invoice_{job.Id:D4}.pdf");
+    }
 }
