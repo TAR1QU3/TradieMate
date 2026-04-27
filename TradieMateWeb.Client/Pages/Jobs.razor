@@ -126,6 +126,8 @@
     private async Task AddJob()
     {
         if (string.IsNullOrWhiteSpace(newJob.Title) || newJob.ClientId == 0) return;
+        newJob.DueDate = newJob.DueDate.ToUniversalTime();
+        newJob.JobDate = DateTime.UtcNow;
         await Http.PostAsJsonAsync("Jobs", newJob);
         newJob = new();
         showForm = false;
