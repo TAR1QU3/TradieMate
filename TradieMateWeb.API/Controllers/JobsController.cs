@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using TradieMateWeb.API.Data;
 using TradieMateWeb.API.Models;
-
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 namespace TradieMateWeb.API.Controllers;
 
 [Authorize]
