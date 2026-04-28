@@ -44,7 +44,7 @@ public class JobsController : ControllerBase
         await _db.SaveChangesAsync();
         return Ok(job);
     }
-    
+
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, Job job)
     {
@@ -101,7 +101,10 @@ public class JobsController : ControllerBase
 
         QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
-        var gst = job.TotalAmount * 0.10;
+        //var gst = job.TotalAmount * 0.10;
+        //var total = job.TotalAmount + gst;
+        var gstRate = settings.GSTRate > 0 ? settings.GSTRate / 100 : 0.10;
+        var gst = job.TotalAmount * gstRate;
         var total = job.TotalAmount + gst;
 
         var pdf = QuestPDF.Fluent.Document.Create(container =>

@@ -15,4 +15,6 @@ public class BusinessSettings
     public string PayID { get; set; } = string.Empty;
     public string PaymentTerms { get; set; } = "Net 14";
     public string InvoiceNotes { get; set; } = "Thank you for your business!";
+    public double GSTRate { get; set; } = 10.0;
+    public bool IsPro { get; set; } = false;
 }
