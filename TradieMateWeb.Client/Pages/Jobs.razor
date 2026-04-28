@@ -93,7 +93,12 @@
                     <button class="btn-green" @onclick="() => MarkAsPaid(job.Id)">✅ Mark Paid</button>
                 }
                 <button class="btn-red" @onclick="() => DeleteJob(job.Id)">🗑 Delete</button>
-                <button class="btn-purple" @onclick="() => GenerateAndShareInvoice(job.Id)">📄 Invoice</button>
+                <button class="btn-purple" @onclick="() => GenerateAndShareInvoice(job.Id)">
+                    📄 Invoice
+                </button>
+                <button class="btn-blue-share" @onclick="() => ShareInvoice(job.Id, job.Client?.Name ?? string.Empty)">
+                    📤 Share
+                </button>
             </div>
         </div>
     </div>
@@ -157,6 +162,22 @@
             var pdfBytes = await response.Content.ReadAsByteArrayAsync();
             var base64 = Convert.ToBase64String(pdfBytes);
             await JS.InvokeVoidAsync("downloadPdf", base64, $"Invoice_{jobId:D4}.pdf");
+        }
+        catch { }
+    }
+    private async Task ShareInvoice(int jobId, string clientName)
+    {
+        try
+        {
+            var response = await Http.GetAsync($"Jobs/{jobId}/invoice");
+            if (!response.IsSuccessStatusCode) return;
+
+            var pdfBytes = await response.Content.ReadAsByteArrayAsync();
+            var base64 = Convert.ToBase64String(pdfBytes);
+            await JS.InvokeVoidAsync("shareInvoice", base64, 
+                $"Invoice_{jobId:D4}.pdf", 
+                $"Invoice #{jobId:D4} from TradieMate",
+                $"Please find attached invoice #{jobId:D4}. Thank you for your business!");
         }
         catch { }
     }

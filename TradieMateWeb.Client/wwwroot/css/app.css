@@ -377,4 +377,14 @@ body {
         cursor: pointer;
         font-size: 13px;
     }
+    .btn-blue-share {
+        background: #89dceb;
+        color: #1e1e2e;
+        border: none;
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 13px;
+    }
 }

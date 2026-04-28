@@ -29,6 +29,30 @@
             link.download = fileName;
             link.click();
         }
+        async function shareInvoice(base64, fileName, title, text) {
+            try {
+                const byteCharacters = atob(base64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const file = new File([byteArray], fileName, { type: 'application/pdf' });
+
+                if (navigator.share && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: title,
+                        text: text
+                    });
+                } else {
+                    // Fallback - download karo
+                    downloadPdf(base64, fileName);
+                }
+            } catch (e) {
+                console.log('Share cancelled or failed');
+            }
+        }
     </script>
 </body>
 </html>
