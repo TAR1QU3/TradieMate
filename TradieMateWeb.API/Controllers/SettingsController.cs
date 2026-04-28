@@ -52,6 +52,8 @@ public class SettingsController : ControllerBase
             existing.PayID = settings.PayID;
             existing.PaymentTerms = settings.PaymentTerms;
             existing.InvoiceNotes = settings.InvoiceNotes;
+            existing.GSTRate = settings.GSTRate;
+            existing.IsPro = settings.IsPro;
         }
         await _db.SaveChangesAsync();
         return Ok(settings);

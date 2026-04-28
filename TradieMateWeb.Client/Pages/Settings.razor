@@ -52,6 +52,16 @@
 </div>
 
 <div class="form-card">
+    <h3>Invoice Settings</h3>
+
+    <label>GST Rate (%)</label>
+    <input type="number" @bind="settings.GSTRate" 
+           placeholder="e.g. 10"/>
+    <p style="font-size:11px; color:#6c7086; margin-top:4px;">
+        Default is 10% for Australia. Set to 0 if GST free.
+    </p>
+</div>
+<div class="form-card">
     <h3>Invoice Notes</h3>
     <textarea @bind="settings.InvoiceNotes" 
               placeholder="e.g. Thank you for your business! Please pay within 14 days.">
