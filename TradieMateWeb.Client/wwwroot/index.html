@@ -22,5 +22,13 @@
         <a class="dismiss">🗙</a>
     </div>
     <script src="_framework/blazor.webassembly.js"></script>
+    <script>
+        function downloadPdf(base64, fileName) {
+            const link = document.createElement('a');
+            link.href = 'data:application/pdf;base64,' + base64;
+            link.download = fileName;
+            link.click();
+        }
+    </script>
 </body>
 </html>

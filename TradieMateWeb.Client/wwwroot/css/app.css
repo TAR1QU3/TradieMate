@@ -367,4 +367,14 @@ body {
     .job-actions { justify-content: flex-start; }
     .row { grid-template-columns: 1fr; }
     .cards { grid-template-columns: 1fr 1fr; }
+    .btn-purple {
+        background: #cba6f7;
+        color: #1e1e2e;
+        border: none;
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 13px;
+    }
 }
