@@ -1,20 +1,20 @@
 @page "/jobs"
 @inject HttpClient Http
-@inject IJSRuntime JS
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <div class="page-header">
     <h2>📋 Jobs</h2>
-    <button class="btn-primary" @onclick="() => showForm = !showForm">+ New Job</button>
+    <button class="btn-primary" @onclick="() => { showForm = true; editingJob = null; resetForm(); }">+ New Job</button>
 </div>
 
 @if (showForm)
 {
     <div class="form-card">
-        <h3>New Job</h3>
+        <h3>@(editingJob == null ? "New Job" : "Edit Job")</h3>
 
         <label>Client</label>
-        <select @bind="newJob.ClientId">
+        <select @bind="formClientId">
             <option value="0">-- Select Client --</option>
             @foreach (var c in clients)
             {
@@ -23,36 +23,38 @@
         </select>
 
         <label>Job Title</label>
-        <input @bind="newJob.Title" placeholder="e.g. Fix leaking pipe"/>
+        <input @bind="formTitle" placeholder="e.g. Fix leaking pipe"/>
 
         <label>Description</label>
-        <textarea @bind="newJob.Description" placeholder="Job details..."></textarea>
+        <textarea @bind="formDescription" placeholder="Job details..."></textarea>
 
         <div class="row">
             <div>
                 <label>Labour Cost ($)</label>
-                <input type="number" @bind="newJob.LaborCost"/>
+                <input type="number" @bind="formLaborCost"/>
             </div>
             <div>
                 <label>Material Cost ($)</label>
-                <input type="number" @bind="newJob.MaterialCost"/>
+                <input type="number" @bind="formMaterialCost"/>
             </div>
         </div>
 
         <label>Status</label>
-        <select @bind="newJob.Status">
+        <select @bind="formStatus">
             <option>Pending</option>
             <option>In Progress</option>
             <option>Completed</option>
         </select>
 
         <label>Due Date</label>
-        <input type="date" @bind="newJob.DueDate"/>
+        <input type="date" @bind="formDueDate"/>
 
         <label>Payment Terms</label>
-        <input @bind="newJob.PaymentTerms" placeholder="e.g. Net 14"/>
+        <input @bind="formPaymentTerms" placeholder="e.g. Net 14"/>
 
-        <button class="btn-primary" @onclick="AddJob">+ Add Job</button>
+        <button class="btn-primary" @onclick="SaveJob">
+            @(editingJob == null ? "+ Add Job" : "💾 Save Changes")
+        </button>
         <button class="btn-secondary" @onclick="() => showForm = false">Cancel</button>
     </div>
 }
@@ -88,17 +90,14 @@
             <p>Materials: $@job.MaterialCost.ToString("N0")</p>
             <p>Due: @job.DueDate.ToString("dd MMM yyyy")</p>
             <div class="job-actions">
+                <button class="btn-primary" @onclick="() => StartEdit(job)">✏️ Edit</button>
                 @if (!job.IsPaid)
                 {
-                    <button class="btn-green" @onclick="() => MarkAsPaid(job.Id)">✅ Mark Paid</button>
+                    <button class="btn-green" @onclick="() => MarkAsPaid(job.Id)">✅ Paid</button>
                 }
+                <button class="btn-purple" @onclick="() => GenerateAndShareInvoice(job.Id)">📄 Invoice</button>
+                <button class="btn-blue-share" @onclick="() => ShareInvoice(job.Id, job.Client?.Name ?? string.Empty)">📤 Share</button>
                 <button class="btn-red" @onclick="() => DeleteJob(job.Id)">🗑 Delete</button>
-                <button class="btn-purple" @onclick="() => GenerateAndShareInvoice(job.Id)">
-                    📄 Invoice
-                </button>
-                <button class="btn-blue-share" @onclick="() => ShareInvoice(job.Id, job.Client?.Name ?? string.Empty)">
-                    📤 Share
-                </button>
             </div>
         </div>
     </div>
@@ -112,8 +111,17 @@
 @code {
     private List<TradieMateWeb.Client.Models.Job> jobs = new();
     private List<TradieMateWeb.Client.Models.Client> clients = new();
-    private TradieMateWeb.Client.Models.Job newJob = new();
+    private TradieMateWeb.Client.Models.Job? editingJob = null;
     private bool showForm = false;
+
+    private int formClientId = 0;
+    private string formTitle = string.Empty;
+    private string formDescription = string.Empty;
+    private double formLaborCost = 0;
+    private double formMaterialCost = 0;
+    private string formStatus = "Pending";
+    private DateTime formDueDate = DateTime.Now.AddDays(14);
+    private string formPaymentTerms = "Net 14";
 
     protected override async Task OnInitializedAsync()
     {
@@ -130,14 +138,68 @@
         catch { }
     }
 
-    private async Task AddJob()
+    private void resetForm()
     {
-        if (string.IsNullOrWhiteSpace(newJob.Title) || newJob.ClientId == 0) return;
-        newJob.DueDate = newJob.DueDate.ToUniversalTime();
-        newJob.JobDate = DateTime.UtcNow;
-        await Http.PostAsJsonAsync("Jobs", newJob);
-        newJob = new();
+        formClientId = 0;
+        formTitle = string.Empty;
+        formDescription = string.Empty;
+        formLaborCost = 0;
+        formMaterialCost = 0;
+        formStatus = "Pending";
+        formDueDate = DateTime.Now.AddDays(14);
+        formPaymentTerms = "Net 14";
+    }
+
+    private void StartEdit(TradieMateWeb.Client.Models.Job job)
+    {
+        editingJob = job;
+        formClientId = job.ClientId;
+        formTitle = job.Title;
+        formDescription = job.Description;
+        formLaborCost = job.LaborCost;
+        formMaterialCost = job.MaterialCost;
+        formStatus = job.Status;
+        formDueDate = job.DueDate;
+        formPaymentTerms = job.PaymentTerms;
+        showForm = true;
+    }
+
+    private async Task SaveJob()
+    {
+        if (string.IsNullOrWhiteSpace(formTitle) || formClientId == 0) return;
+
+        if (editingJob == null)
+        {
+            var newJob = new TradieMateWeb.Client.Models.Job
+            {
+                ClientId = formClientId,
+                Title = formTitle,
+                Description = formDescription,
+                LaborCost = formLaborCost,
+                MaterialCost = formMaterialCost,
+                Status = formStatus,
+                DueDate = formDueDate.ToUniversalTime(),
+                JobDate = DateTime.UtcNow,
+                PaymentTerms = formPaymentTerms
+            };
+            await Http.PostAsJsonAsync("Jobs", newJob);
+        }
+        else
+        {
+            editingJob.ClientId = formClientId;
+            editingJob.Title = formTitle;
+            editingJob.Description = formDescription;
+            editingJob.LaborCost = formLaborCost;
+            editingJob.MaterialCost = formMaterialCost;
+            editingJob.Status = formStatus;
+            editingJob.DueDate = formDueDate;
+            editingJob.PaymentTerms = formPaymentTerms;
+            await Http.PutAsJsonAsync($"Jobs/{editingJob.Id}", editingJob);
+        }
+
         showForm = false;
+        editingJob = null;
+        resetForm();
         await LoadData();
     }
 
@@ -152,6 +214,7 @@
         await Http.DeleteAsync($"Jobs/{id}");
         await LoadData();
     }
+
     private async Task GenerateAndShareInvoice(int jobId)
     {
         try
@@ -165,6 +228,7 @@
         }
         catch { }
     }
+
     private async Task ShareInvoice(int jobId, string clientName)
     {
         try
@@ -174,8 +238,8 @@
 
             var pdfBytes = await response.Content.ReadAsByteArrayAsync();
             var base64 = Convert.ToBase64String(pdfBytes);
-            await JS.InvokeVoidAsync("shareInvoice", base64, 
-                $"Invoice_{jobId:D4}.pdf", 
+            await JS.InvokeVoidAsync("shareInvoice", base64,
+                $"Invoice_{jobId:D4}.pdf",
                 $"Invoice #{jobId:D4} from TradieMate",
                 $"Please find attached invoice #{jobId:D4}. Thank you for your business!");
         }

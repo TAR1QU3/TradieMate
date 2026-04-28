@@ -44,6 +44,25 @@ public class JobsController : ControllerBase
         await _db.SaveChangesAsync();
         return Ok(job);
     }
+    
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, Job job)
+    {
+        var existing = await _db.Jobs
+            .FirstOrDefaultAsync(j => j.Id == id && j.UserId == GetUserId());
+        if (existing == null) return NotFound();
+
+        existing.Title = job.Title;
+        existing.Description = job.Description;
+        existing.LaborCost = job.LaborCost;
+        existing.MaterialCost = job.MaterialCost;
+        existing.Status = job.Status;
+        existing.DueDate = job.DueDate.ToUniversalTime();
+        existing.PaymentTerms = job.PaymentTerms;
+
+        await _db.SaveChangesAsync();
+        return Ok(existing);
+    }
 
     [HttpPut("{id}/pay")]
     public async Task<IActionResult> MarkAsPaid(int id)

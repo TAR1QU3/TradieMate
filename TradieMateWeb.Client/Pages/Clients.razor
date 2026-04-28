@@ -3,27 +3,29 @@
 
 <div class="page-header">
     <h2>👥 Clients</h2>
-    <button class="btn-primary" @onclick="() => showForm = !showForm">+ New Client</button>
+    <button class="btn-primary" @onclick="() => { showForm = true; editingClient = null; resetForm(); }">+ New Client</button>
 </div>
 
 @if (showForm)
 {
     <div class="form-card">
-        <h3>New Client</h3>
+        <h3>@(editingClient == null ? "New Client" : "Edit Client")</h3>
 
         <label>Full Name *</label>
-        <input @bind="newClient.Name" placeholder="e.g. John Smith"/>
+        <input @bind="formName" placeholder="e.g. John Smith"/>
 
         <label>Phone</label>
-        <input @bind="newClient.Phone" placeholder="e.g. 0412 345 678"/>
+        <input @bind="formPhone" placeholder="e.g. 0412 345 678"/>
 
         <label>Email</label>
-        <input @bind="newClient.Email" placeholder="e.g. john@email.com"/>
+        <input @bind="formEmail" placeholder="e.g. john@email.com"/>
 
         <label>Address</label>
-        <textarea @bind="newClient.Address" placeholder="e.g. 12 Main St, Perth WA 6000"></textarea>
+        <textarea @bind="formAddress" placeholder="e.g. 12 Main St, Perth WA 6000"></textarea>
 
-        <button class="btn-primary" @onclick="AddClient">+ Add Client</button>
+        <button class="btn-primary" @onclick="SaveClient">
+            @(editingClient == null ? "+ Add Client" : "💾 Save Changes")
+        </button>
         <button class="btn-secondary" @onclick="() => showForm = false">Cancel</button>
     </div>
 }
@@ -37,7 +39,10 @@
             <p>✉️ @client.Email</p>
             <p>📍 @client.Address</p>
         </div>
-        <button class="btn-red" @onclick="() => DeleteClient(client.Id)">🗑 Delete</button>
+        <div style="display:flex; gap:8px; flex-direction:column; align-items:flex-end;">
+            <button class="btn-primary" @onclick="() => StartEdit(client)">✏️ Edit</button>
+            <button class="btn-red" @onclick="() => DeleteClient(client.Id)">🗑 Delete</button>
+        </div>
     </div>
 }
 
@@ -48,8 +53,13 @@
 
 @code {
     private List<TradieMateWeb.Client.Models.Client> clients = new();
-    private TradieMateWeb.Client.Models.Client newClient = new();
+    private TradieMateWeb.Client.Models.Client? editingClient = null;
     private bool showForm = false;
+
+    private string formName = string.Empty;
+    private string formPhone = string.Empty;
+    private string formEmail = string.Empty;
+    private string formAddress = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -65,12 +75,51 @@
         catch { }
     }
 
-    private async Task AddClient()
+    private void resetForm()
     {
-        if (string.IsNullOrWhiteSpace(newClient.Name)) return;
-        await Http.PostAsJsonAsync("Clients", newClient);
-        newClient = new();
+        formName = string.Empty;
+        formPhone = string.Empty;
+        formEmail = string.Empty;
+        formAddress = string.Empty;
+    }
+
+    private void StartEdit(TradieMateWeb.Client.Models.Client client)
+    {
+        editingClient = client;
+        formName = client.Name;
+        formPhone = client.Phone;
+        formEmail = client.Email;
+        formAddress = client.Address;
+        showForm = true;
+    }
+
+    private async Task SaveClient()
+    {
+        if (string.IsNullOrWhiteSpace(formName)) return;
+
+        if (editingClient == null)
+        {
+            var newClient = new TradieMateWeb.Client.Models.Client
+            {
+                Name = formName,
+                Phone = formPhone,
+                Email = formEmail,
+                Address = formAddress
+            };
+            await Http.PostAsJsonAsync("Clients", newClient);
+        }
+        else
+        {
+            editingClient.Name = formName;
+            editingClient.Phone = formPhone;
+            editingClient.Email = formEmail;
+            editingClient.Address = formAddress;
+            await Http.PutAsJsonAsync($"Clients/{editingClient.Id}", editingClient);
+        }
+
         showForm = false;
+        editingClient = null;
+        resetForm();
         await LoadClients();
     }
 
