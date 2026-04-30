@@ -256,7 +256,7 @@ body {
 .job-info .client-name { color: #89b4fa; font-size: 13px; margin-bottom: 4px; }
 .job-info p { color: #6c7086; font-size: 13px; margin-bottom: 8px; }
 
-.job-amount { text-align: right; min-width: 120px; }
+.job-amount { min-width: 280px; width: 100%; }
 .job-amount h3 { font-size: 20px; margin-bottom: 4px; }
 .job-amount p { color: #6c7086; font-size: 12px; }
 .job-actions { margin-top: 8px; display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
@@ -386,5 +386,52 @@ body {
         font-weight: bold;
         cursor: pointer;
         font-size: 13px;
+    }
+    .invoice-preview {
+    background: #fff;
+    padding: 15px;
+    border-radius: 10px;
+    }
+
+    .invoice-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+
+    .invoice-meta {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+
+    .invoice-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .invoice-table th {
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+        padding: 6px;
+    }
+
+    .invoice-table td {
+        padding: 6px;
+    }
+
+    .invoice-total {
+        margin-top: 10px;
+        text-align: right;
+    }
+
+    .invoice-total div {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .grand-total {
+        font-size: 16px;
+        margin-top: 5px;
     }
 }
