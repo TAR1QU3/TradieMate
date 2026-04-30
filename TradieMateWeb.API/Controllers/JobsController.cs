@@ -54,8 +54,6 @@ public class JobsController : ControllerBase
 
         existing.Title = job.Title;
         existing.Description = job.Description;
-        existing.LaborCost = job.LaborCost;
-        existing.MaterialCost = job.MaterialCost;
         existing.Status = job.Status;
         existing.DueDate = job.DueDate.ToUniversalTime();
         existing.PaymentTerms = job.PaymentTerms;
@@ -101,12 +99,18 @@ public class JobsController : ControllerBase
 
         QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
-        //var gst = job.TotalAmount * 0.10;
-        //var total = job.TotalAmount + gst;
-        var gstRate = settings.GSTRate > 0 ? settings.GSTRate / 100 : 0.10;
-        var gst = job.TotalAmount * gstRate;
-        var total = job.TotalAmount + gst;
+        var jobWithItems = await _db.Jobs
+            .Include(j => j.InvoiceItems)
+            .Include(j => j.Client)
+            .FirstOrDefaultAsync(j => j.Id == id && j.UserId == GetUserId());
 
+        if (jobWithItems == null) return NotFound();
+        job = jobWithItems;
+
+        var gstRate = settings.GSTRate > 0 ? settings.GSTRate / 100 : 0.10;
+        var subtotal = job.InvoiceItems.Sum(i => i.Amount);
+        var gst = subtotal * gstRate;
+        var total = subtotal + gst;
         var pdf = QuestPDF.Fluent.Document.Create(container =>
         {
             container.Page(page =>
@@ -193,11 +197,11 @@ public class JobsController : ControllerBase
                                 .Text("Amount (AUD)").FontColor(QuestPDF.Helpers.Colors.White).Bold().AlignRight();
                         });
 
-                        table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8).Text("Labour Cost");
-                        table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8).Text($"${job.LaborCost:N2}").AlignRight();
-
-                        table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8).Text("Material Cost");
-                        table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8).Text($"${job.MaterialCost:N2}").AlignRight();
+                        foreach (var item in job.InvoiceItems)
+                        {
+                            table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8).Text(item.Description);
+                            table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8).Text($"${item.Amount:N2}").AlignRight();
+                        }
 
                         table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8).Text("GST (10%)").FontColor("#6C7086");
                         table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8).Text($"${gst:N2}").AlignRight().FontColor("#6C7086");

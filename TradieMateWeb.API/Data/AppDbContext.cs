@@ -11,10 +11,13 @@ public class AppDbContext : DbContext
     public DbSet<Job> Jobs { get; set; }
     public DbSet<BusinessSettings> BusinessSettings { get; set; }
     public DbSet<User> Users { get; set; }
+    public DbSet<InvoiceItem> InvoiceItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Job ka TotalAmount calculated hai - database mein save nahi hoga
+        modelBuilder.Entity<InvoiceItem>()
+            .Ignore(i => i.Amount);
+
         modelBuilder.Entity<Job>()
             .Ignore(j => j.TotalAmount);
 
