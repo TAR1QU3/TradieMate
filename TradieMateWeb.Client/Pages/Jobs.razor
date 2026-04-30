@@ -28,8 +28,16 @@
         <label>Description</label>
         <textarea @bind="formDescription" placeholder="Job details..."></textarea>
 
-        <label>Total Amount ($)</label>
-        <input type="number" @bind="formLaborCost"/>
+        <div class="row">
+            <div>
+                <label>Labour Cost ($)</label>
+                <input type="number" @bind="formLaborCost"/>
+            </div>
+            <div>
+                <label>Material Cost ($)</label>
+                <input type="number" @bind="formMaterialCost"/>
+            </div>
+        </div>
 
         <label>Status</label>
         <select @bind="formStatus">
@@ -67,87 +75,30 @@
 @foreach (var job in jobs)
 {
     <div class="job-card">
-
-        <!-- LEFT SIDE -->
         <div class="job-info">
             <h3>@job.Title</h3>
             <p class="client-name">👤 @(job.Client?.Name ?? "Unknown")</p>
             <p>@job.Description</p>
-
             <span class="badge @job.Status.Replace(" ", "")">@job.Status</span>
             <span class="badge @(job.IsPaid ? "Paid" : "Unpaid")">
                 @(job.IsPaid ? "✅ Paid" : "⏳ Unpaid")
             </span>
         </div>
-
-        <!-- RIGHT SIDE (PRO INVOICE VIEW) -->
         <div class="job-amount">
-
-            <div class="invoice-preview">
-
-                <div class="invoice-header">
-                    <h4>INVOICE</h4>
-                    <span>#@job.Id.ToString("D4")</span>
-                </div>
-
-                <div class="invoice-meta">
-                    <div>
-                        <strong>Client</strong><br />
-                        @job.Client?.Name
-                    </div>
-                    <div>
-                        <strong>Due</strong><br />
-                        @job.DueDate.ToString("dd MMM yyyy")
-                    </div>
-                </div>
-
-                <table class="invoice-table">
-                    <thead>
-                        <tr>
-                            <th>Description</th>
-                            <th style="width:120px;">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>@job.Title</td>
-                            <td>$@job.TotalAmount.ToString("N2")</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div class="invoice-total">
-                    <div>
-                        <span>Subtotal</span>
-                        <span>$@job.TotalAmount.ToString("N2")</span>
-                    </div>
-
-                    <div>
-                        <span>GST (10%)</span>
-                        <span>$@((job.TotalAmount * 0.1).ToString("N2"))</span>
-                    </div>
-
-                    <div class="grand-total">
-                        <strong>Total</strong>
-                        <strong>$@((job.TotalAmount * 1.1).ToString("N2"))</strong>
-                    </div>
-                </div>
-
-            </div>
-
+            <h3>$@job.TotalAmount.ToString("N0")</h3>
+            <p>Labour: $@job.LaborCost.ToString("N0")</p>
+            <p>Materials: $@job.MaterialCost.ToString("N0")</p>
+            <p>Due: @job.DueDate.ToString("dd MMM yyyy")</p>
             <div class="job-actions">
                 <button class="btn-primary" @onclick="() => StartEdit(job)">✏️ Edit</button>
-
                 @if (!job.IsPaid)
                 {
                     <button class="btn-green" @onclick="() => MarkAsPaid(job.Id)">✅ Paid</button>
                 }
-
-                <button class="btn-purple" @onclick="() => GenerateAndShareInvoice(job.Id)">📄 PDF</button>
+                <button class="btn-purple" @onclick="() => GenerateAndShareInvoice(job.Id)">📄 Invoice</button>
                 <button class="btn-blue-share" @onclick="() => ShareInvoice(job.Id, job.Client?.Name ?? string.Empty)">📤 Share</button>
                 <button class="btn-red" @onclick="() => DeleteJob(job.Id)">🗑 Delete</button>
             </div>
-
         </div>
     </div>
 }
@@ -167,6 +118,7 @@
     private string formTitle = string.Empty;
     private string formDescription = string.Empty;
     private double formLaborCost = 0;
+    private double formMaterialCost = 0;
     private string formStatus = "Pending";
     private DateTime formDueDate = DateTime.Now.AddDays(14);
     private string formPaymentTerms = "Net 14";
@@ -178,16 +130,21 @@
 
     private async Task LoadData()
     {
-        jobs = await Http.GetFromJsonAsync<List<TradieMateWeb.Client.Models.Job>>("Jobs") ?? new();
-        clients = await Http.GetFromJsonAsync<List<TradieMateWeb.Client.Models.Client>>("Clients") ?? new();
+        try
+        {
+            jobs = await Http.GetFromJsonAsync<List<TradieMateWeb.Client.Models.Job>>("Jobs") ?? new();
+            clients = await Http.GetFromJsonAsync<List<TradieMateWeb.Client.Models.Client>>("Clients") ?? new();
+        }
+        catch { }
     }
 
     private void resetForm()
     {
         formClientId = 0;
-        formTitle = "";
-        formDescription = "";
+        formTitle = string.Empty;
+        formDescription = string.Empty;
         formLaborCost = 0;
+        formMaterialCost = 0;
         formStatus = "Pending";
         formDueDate = DateTime.Now.AddDays(14);
         formPaymentTerms = "Net 14";
@@ -199,7 +156,8 @@
         formClientId = job.ClientId;
         formTitle = job.Title;
         formDescription = job.Description;
-        formLaborCost = job.TotalAmount;
+        formLaborCost = job.LaborCost;
+        formMaterialCost = job.MaterialCost;
         formStatus = job.Status;
         formDueDate = job.DueDate;
         formPaymentTerms = job.PaymentTerms;
@@ -210,25 +168,38 @@
     {
         if (string.IsNullOrWhiteSpace(formTitle) || formClientId == 0) return;
 
-        var job = new TradieMateWeb.Client.Models.Job
-        {
-            ClientId = formClientId,
-            Title = formTitle,
-            Description = formDescription,
-            LaborCost = formLaborCost,
-            MaterialCost = 0,
-            Status = formStatus,
-            DueDate = formDueDate,
-            PaymentTerms = formPaymentTerms
-        };
-
         if (editingJob == null)
-            await Http.PostAsJsonAsync("Jobs", job);
+        {
+            var newJob = new TradieMateWeb.Client.Models.Job
+            {
+                ClientId = formClientId,
+                Title = formTitle,
+                Description = formDescription,
+                LaborCost = formLaborCost,
+                MaterialCost = formMaterialCost,
+                Status = formStatus,
+                DueDate = formDueDate.ToUniversalTime(),
+                JobDate = DateTime.UtcNow,
+                PaymentTerms = formPaymentTerms
+            };
+            await Http.PostAsJsonAsync("Jobs", newJob);
+        }
         else
-            await Http.PutAsJsonAsync($"Jobs/{editingJob.Id}", job);
+        {
+            editingJob.ClientId = formClientId;
+            editingJob.Title = formTitle;
+            editingJob.Description = formDescription;
+            editingJob.LaborCost = formLaborCost;
+            editingJob.MaterialCost = formMaterialCost;
+            editingJob.Status = formStatus;
+            editingJob.DueDate = formDueDate;
+            editingJob.PaymentTerms = formPaymentTerms;
+            await Http.PutAsJsonAsync($"Jobs/{editingJob.Id}", editingJob);
+        }
 
         showForm = false;
         editingJob = null;
+        resetForm();
         await LoadData();
     }
 
@@ -246,25 +217,32 @@
 
     private async Task GenerateAndShareInvoice(int jobId)
     {
-        var response = await Http.GetAsync($"Jobs/{jobId}/invoice");
-        if (!response.IsSuccessStatusCode) return;
+        try
+        {
+            var response = await Http.GetAsync($"Jobs/{jobId}/invoice");
+            if (!response.IsSuccessStatusCode) return;
 
-        var pdfBytes = await response.Content.ReadAsByteArrayAsync();
-        var base64 = Convert.ToBase64String(pdfBytes);
-        await JS.InvokeVoidAsync("downloadPdf", base64, $"Invoice_{jobId:D4}.pdf");
+            var pdfBytes = await response.Content.ReadAsByteArrayAsync();
+            var base64 = Convert.ToBase64String(pdfBytes);
+            await JS.InvokeVoidAsync("downloadPdf", base64, $"Invoice_{jobId:D4}.pdf");
+        }
+        catch { }
     }
 
     private async Task ShareInvoice(int jobId, string clientName)
     {
-        var response = await Http.GetAsync($"Jobs/{jobId}/invoice");
-        if (!response.IsSuccessStatusCode) return;
+        try
+        {
+            var response = await Http.GetAsync($"Jobs/{jobId}/invoice");
+            if (!response.IsSuccessStatusCode) return;
 
-        var pdfBytes = await response.Content.ReadAsByteArrayAsync();
-        var base64 = Convert.ToBase64String(pdfBytes);
-
-        await JS.InvokeVoidAsync("shareInvoice", base64,
-            $"Invoice_{jobId:D4}.pdf",
-            $"Invoice #{jobId:D4}",
-            $"Please find attached invoice.");
+            var pdfBytes = await response.Content.ReadAsByteArrayAsync();
+            var base64 = Convert.ToBase64String(pdfBytes);
+            await JS.InvokeVoidAsync("shareInvoice", base64,
+                $"Invoice_{jobId:D4}.pdf",
+                $"Invoice #{jobId:D4} from TradieMate",
+                $"Please find attached invoice #{jobId:D4}. Thank you for your business!");
+        }
+        catch { }
     }
 }
