@@ -27,12 +27,13 @@ public class JobsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-    var jobs = await _db.Jobs
-        .Where(j => j.UserId == GetUserId())
-        .Include(j => j.Client)
-        .Include(j => j.InvoiceItems)
-        .OrderByDescending(j => j.JobDate)
-        .ToListAsync();
+        var jobs = await _db.Jobs
+            .Where(j => j.UserId == GetUserId())
+            .Include(j => j.Client)
+            .Include(j => j.InvoiceItems)
+            .OrderByDescending(j => j.JobDate)
+            .ToListAsync();
+        return Ok(jobs);
     }
 
     [HttpPost]
