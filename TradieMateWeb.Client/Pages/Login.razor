@@ -24,9 +24,20 @@
                 <p class="error-msg">@errorMessage</p>
             }
 
-            <button class="btn-primary" @onclick="DoLogin">Login</button>
+            @if (isLoading)
+            {
+                <div class="loading-btn">
+                    <div class="spinner"></div>
+                    <span>Logging in... please wait</span>
+                </div>
+            }
+            else
+            {
+                <button class="btn-primary" @onclick="DoLogin">Login</button>
+            }
+
             <p class="switch-link">
-                No account? 
+                No account?
                 <span @onclick="() => showRegister = true">Register here</span>
             </p>
         }
@@ -53,9 +64,20 @@
                 <p class="success-msg">@successMessage</p>
             }
 
-            <button class="btn-primary" @onclick="DoRegister">Register</button>
+            @if (isLoading)
+            {
+                <div class="loading-btn">
+                    <div class="spinner"></div>
+                    <span>Registering... please wait</span>
+                </div>
+            }
+            else
+            {
+                <button class="btn-primary" @onclick="DoRegister">Register</button>
+            }
+
             <p class="switch-link">
-                Already have account? 
+                Already have account?
                 <span @onclick="() => showRegister = false">Login here</span>
             </p>
         }
@@ -68,6 +90,7 @@
     private string errorMessage = string.Empty;
     private string successMessage = string.Empty;
     private bool showRegister = false;
+    private bool isLoading = false;
 
     protected override void OnInitialized()
     {
@@ -78,7 +101,12 @@
     private async Task DoLogin()
     {
         errorMessage = string.Empty;
+        isLoading = true;
+        StateHasChanged();
+
         var success = await Auth.Login(loginDto);
+        isLoading = false;
+
         if (success)
             Nav.NavigateTo("/");
         else
@@ -98,7 +126,12 @@
             return;
         }
 
+        isLoading = true;
+        StateHasChanged();
+
         var success = await Auth.Register(registerDto);
+        isLoading = false;
+
         if (success)
         {
             successMessage = "Registered! Please login now.";
