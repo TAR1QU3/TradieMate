@@ -2,6 +2,7 @@
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@using TradieMateWeb.Client.Models
 
 <div class="page-header">
     <h2>📋 Jobs</h2>
@@ -28,17 +29,6 @@
         <label>Description</label>
         <textarea @bind="formDescription" placeholder="Job details..."></textarea>
 
-        <div class="row">
-            <div>
-                <label>Labour Cost ($)</label>
-                <input type="number" @bind="formLaborCost"/>
-            </div>
-            <div>
-                <label>Material Cost ($)</label>
-                <input type="number" @bind="formMaterialCost"/>
-            </div>
-        </div>
-
         <label>Status</label>
         <select @bind="formStatus">
             <option>Pending</option>
@@ -51,6 +41,48 @@
 
         <label>Payment Terms</label>
         <input @bind="formPaymentTerms" placeholder="e.g. Net 14"/>
+
+        <!-- Line Items -->
+        <div style="margin-top:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <label style="margin:0; font-size:14px; font-weight:bold; color:#89b4fa;">Invoice Items</label>
+                <button class="btn-primary" type="button" @onclick="AddLineItem">+ Add Item</button>
+            </div>
+
+            @if (formItems.Any())
+            {
+                <div style="background:#45475a; border-radius:8px; padding:12px; margin-bottom:8px;">
+                    <div style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr auto; gap:8px; margin-bottom:8px;">
+                        <span style="font-size:11px; color:#cdd6f4;">Description</span>
+                        <span style="font-size:11px; color:#cdd6f4;">Qty</span>
+                        <span style="font-size:11px; color:#cdd6f4;">Unit Price</span>
+                        <span style="font-size:11px; color:#cdd6f4;">Amount</span>
+                        <span></span>
+                    </div>
+                    @foreach (var item in formItems)
+                    {
+                        <div style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr auto; gap:8px; margin-bottom:8px; align-items:center;">
+                            <input @bind="item.Description" placeholder="e.g. Labour"/>
+                            <input type="number" @bind="item.Quantity" placeholder="1"/>
+                            <input type="number" @bind="item.UnitPrice" placeholder="0.00"/>
+                            <span style="color:#a6e3a1; font-size:13px;">$@item.Amount.ToString("N2")</span>
+                            <button class="btn-red" style="padding:4px 8px;" @onclick="() => RemoveLineItem(item)">✕</button>
+                        </div>
+                    }
+                </div>
+
+                <div style="text-align:right; padding:8px; background:#313244; border-radius:6px;">
+                    <span style="color:#6c7086; font-size:13px;">Total: </span>
+                    <span style="color:white; font-weight:bold;">$@formItems.Sum(i => i.Amount).ToString("N2")</span>
+                </div>
+            }
+            else
+            {
+                <div style="text-align:center; color:#6c7086; padding:16px; background:#313244; border-radius:8px;">
+                    No items yet. Click "+ Add Item" to start.
+                </div>
+            }
+        </div>
 
         <button class="btn-primary" @onclick="SaveJob">
             @(editingJob == null ? "+ Add Job" : "💾 Save Changes")
@@ -83,12 +115,17 @@
             <span class="badge @(job.IsPaid ? "Paid" : "Unpaid")">
                 @(job.IsPaid ? "✅ Paid" : "⏳ Unpaid")
             </span>
+            @if (job.InvoiceItems.Any())
+            {
+                <p style="font-size:12px; color:#6c7086; margin-top:4px;">
+                    @job.InvoiceItems.Count item(s)
+                </p>
+            }
         </div>
         <div class="job-amount">
             <h3>$@job.TotalAmount.ToString("N0")</h3>
-            <p>Labour: $@job.LaborCost.ToString("N0")</p>
-            <p>Materials: $@job.MaterialCost.ToString("N0")</p>
             <p>Due: @job.DueDate.ToString("dd MMM yyyy")</p>
+            <p>Terms: @job.PaymentTerms</p>
             <div class="job-actions">
                 <button class="btn-primary" @onclick="() => StartEdit(job)">✏️ Edit</button>
                 @if (!job.IsPaid)
@@ -109,19 +146,18 @@
 }
 
 @code {
-    private List<TradieMateWeb.Client.Models.Job> jobs = new();
-    private List<TradieMateWeb.Client.Models.Client> clients = new();
-    private TradieMateWeb.Client.Models.Job? editingJob = null;
+    private List<Job> jobs = new();
+    private List<Client> clients = new();
+    private Job? editingJob = null;
     private bool showForm = false;
 
     private int formClientId = 0;
     private string formTitle = string.Empty;
     private string formDescription = string.Empty;
-    private double formLaborCost = 0;
-    private double formMaterialCost = 0;
     private string formStatus = "Pending";
     private DateTime formDueDate = DateTime.Now.AddDays(14);
     private string formPaymentTerms = "Net 14";
+    private List<InvoiceItem> formItems = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -132,8 +168,8 @@
     {
         try
         {
-            jobs = await Http.GetFromJsonAsync<List<TradieMateWeb.Client.Models.Job>>("Jobs") ?? new();
-            clients = await Http.GetFromJsonAsync<List<TradieMateWeb.Client.Models.Client>>("Clients") ?? new();
+            jobs = await Http.GetFromJsonAsync<List<Job>>("Jobs") ?? new();
+            clients = await Http.GetFromJsonAsync<List<Client>>("Clients") ?? new();
         }
         catch { }
     }
@@ -143,24 +179,29 @@
         formClientId = 0;
         formTitle = string.Empty;
         formDescription = string.Empty;
-        formLaborCost = 0;
-        formMaterialCost = 0;
         formStatus = "Pending";
         formDueDate = DateTime.Now.AddDays(14);
         formPaymentTerms = "Net 14";
+        formItems = new();
     }
 
-    private void StartEdit(TradieMateWeb.Client.Models.Job job)
+    private void StartEdit(Job job)
     {
         editingJob = job;
         formClientId = job.ClientId;
         formTitle = job.Title;
         formDescription = job.Description;
-        formLaborCost = job.LaborCost;
-        formMaterialCost = job.MaterialCost;
         formStatus = job.Status;
         formDueDate = job.DueDate;
         formPaymentTerms = job.PaymentTerms;
+        formItems = job.InvoiceItems.Select(i => new InvoiceItem
+        {
+            Id = i.Id,
+            JobId = i.JobId,
+            Description = i.Description,
+            Quantity = i.Quantity,
+            UnitPrice = i.UnitPrice
+        }).ToList();
         showForm = true;
     }
 
@@ -170,17 +211,16 @@
 
         if (editingJob == null)
         {
-            var newJob = new TradieMateWeb.Client.Models.Job
+            var newJob = new Job
             {
                 ClientId = formClientId,
                 Title = formTitle,
                 Description = formDescription,
-                LaborCost = formLaborCost,
-                MaterialCost = formMaterialCost,
                 Status = formStatus,
                 DueDate = formDueDate.ToUniversalTime(),
                 JobDate = DateTime.UtcNow,
-                PaymentTerms = formPaymentTerms
+                PaymentTerms = formPaymentTerms,
+                InvoiceItems = formItems
             };
             await Http.PostAsJsonAsync("Jobs", newJob);
         }
@@ -189,11 +229,10 @@
             editingJob.ClientId = formClientId;
             editingJob.Title = formTitle;
             editingJob.Description = formDescription;
-            editingJob.LaborCost = formLaborCost;
-            editingJob.MaterialCost = formMaterialCost;
             editingJob.Status = formStatus;
             editingJob.DueDate = formDueDate;
             editingJob.PaymentTerms = formPaymentTerms;
+            editingJob.InvoiceItems = formItems;
             await Http.PutAsJsonAsync($"Jobs/{editingJob.Id}", editingJob);
         }
 
@@ -213,6 +252,16 @@
     {
         await Http.DeleteAsync($"Jobs/{id}");
         await LoadData();
+    }
+
+    private void AddLineItem()
+    {
+        formItems.Add(new InvoiceItem { Quantity = 1 });
+    }
+
+    private void RemoveLineItem(InvoiceItem item)
+    {
+        formItems.Remove(item);
     }
 
     private async Task GenerateAndShareInvoice(int jobId)
