@@ -187,28 +187,59 @@ public class JobsController : ControllerBase
                         table.ColumnsDefinition(cols =>
                         {
                             cols.RelativeColumn(3);
-                            cols.RelativeColumn(1);
+                            cols.ConstantColumn(50);
+                            cols.ConstantColumn(80);
+                            cols.ConstantColumn(80);
                         });
 
+                        // Header
                         table.Header(header =>
                         {
                             header.Cell().Background("#1E1E2E").Padding(8)
-                                .Text("Description").FontColor(QuestPDF.Helpers.Colors.White).Bold();
+                                .Text("Description").FontColor(Colors.White).Bold();
                             header.Cell().Background("#1E1E2E").Padding(8)
-                                .Text("Amount (AUD)").FontColor(QuestPDF.Helpers.Colors.White).Bold().AlignRight();
+                                .Text("Qty").FontColor(Colors.White).Bold().AlignCenter();
+                            header.Cell().Background("#1E1E2E").Padding(8)
+                                .Text("Unit Price").FontColor(Colors.White).Bold().AlignRight();
+                            header.Cell().Background("#1E1E2E").Padding(8)
+                                .Text("Amount").FontColor(Colors.White).Bold().AlignRight();
                         });
 
+                        // Line Items
                         foreach (var item in job.InvoiceItems)
                         {
-                            table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8).Text(item.Description);
-                            table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8).Text($"${item.Amount:N2}").AlignRight();
+                            table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8)
+                                .Text(item.Description);
+                            table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8)
+                                .Text(item.Quantity.ToString("N0")).AlignCenter();
+                            table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8)
+                                .Text($"${item.UnitPrice:N2}").AlignRight();
+                            table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8)
+                                .Text($"${item.Amount:N2}").AlignRight();
                         }
 
-                        table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8).Text("GST (10%)").FontColor("#6C7086");
-                        table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8).Text($"${gst:N2}").AlignRight().FontColor("#6C7086");
+                        // Subtotal
+                        table.Cell().Padding(8).Text("Subtotal").FontColor("#6C7086");
+                        table.Cell().Padding(8).Text("").AlignCenter();
+                        table.Cell().Padding(8).Text("").AlignRight();
+                        table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8)
+                            .Text($"${subtotal:N2}").AlignRight().FontColor("#6C7086");
 
-                        table.Cell().Background("#F0F4FF").Padding(10).Text("TOTAL DUE (AUD)").Bold().FontSize(14);
-                        table.Cell().Background("#F0F4FF").Padding(10).Text($"${total:N2}").Bold().FontSize(14).AlignRight().FontColor("#89B4FA");
+                        // GST
+                        table.Cell().Padding(8).Text($"GST ({settings.GSTRate}%)").FontColor("#6C7086");
+                        table.Cell().Padding(8).Text("").AlignCenter();
+                        table.Cell().Padding(8).Text("").AlignRight();
+                        table.Cell().BorderBottom(1).BorderColor("#E0E0E0").Padding(8)
+                            .Text($"${gst:N2}").AlignRight().FontColor("#6C7086");
+
+                        // Total
+                        table.Cell().Background("#F0F4FF").Padding(10)
+                            .Text("TOTAL DUE (AUD)").Bold().FontSize(14);
+                        table.Cell().Background("#F0F4FF").Padding(10).Text("");
+                        table.Cell().Background("#F0F4FF").Padding(10).Text("");
+                        table.Cell().Background("#F0F4FF").Padding(10)
+                            .Text($"${total:N2}").Bold().FontSize(14)
+                            .AlignRight().FontColor("#89B4FA");
                     });
 
                     col.Item().PaddingVertical(12).LineHorizontal(1).LineColor("#E0E0E0");
